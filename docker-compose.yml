@@ -1,0 +1,45 @@
+version: '3.6'
+
+services:
+  vault:
+    image: vault
+    container_name: vault
+    ports:
+      - 8200:8200
+    volumes:
+      - ./config/vault.json:/vault/config/vault.json:ro
+      - vault-policies:/vault/policies
+      - vault-data:/vault/data
+      - vault-file:/vault/file
+      - vault-audit-logs:/vault/logs
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+    entrypoint: vault server -config=/vault/config/vault.json
+    cap_add:
+      - IPC_LOCK
+    depends_on:
+      - consul
+
+  consul:
+    image: consul
+    ports:
+      - 8500:8500
+    command: agent -server -bind 0.0.0.0 -client 0.0.0.0 -bootstrap-expect 1 -config-file=/consul/config/config.json
+    volumes:
+      - ./config/consul.json:/consul/config/config.json:ro
+      - consul-data:/consul/data
+
+  consul-worker:
+    image: consul
+    command: agent -server -join consul -config-file=/consul/config/config.json
+    volumes:
+      - ./config/consul.json:/consul/config/config.json:ro
+    depends_on:
+      - consul
+
+volumes:
+  vault-policies:
+  vault-data:
+  vault-audit-logs:
+  vault-file:
+  consul-data:
